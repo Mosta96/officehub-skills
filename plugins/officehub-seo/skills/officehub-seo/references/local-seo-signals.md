@@ -103,6 +103,9 @@ XGBoost regression model, explains 92-93% of variance. (Study)
 
 ## Citation Source Tiers
 
+> These tiers are US-centric. For Saudi Arabia use `references/saudi-market.md` §5
+> (GBP, Apple Business Connect, Bing Places, verified Saudi directories, social profiles).
+
 ### Tier 1 (Universal, All Industries)
 
 | Source | Why It Matters |

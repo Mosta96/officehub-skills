@@ -5,8 +5,16 @@ Each skill is its own plugin, so you pick only the ones you want.
 
 | Plugin | What it does |
 |---|---|
-| `officehub-product-angles` | Give it one photo of a furniture item plus its dimensions (W x D x H). Claude writes one ready-to-paste prompt per angle (front, 3/4, sides, back, top, detail). You generate each image in Gemini (or ChatGPT) with the original photo attached, then upload the results back so Claude can check them. No API key needed. |
-| `officehub-seo` | Full SEO toolkit: site and page audits, technical SEO, schema, E-E-A-T content, AI search (GEO), local, e-commerce, hreflang, keyword clusters, content briefs and SEO plans. Adapted from the MIT-licensed claude-seo project (see `plugins/officehub-seo/skills/officehub-seo/LICENSE.txt`). No API key needed. |
+| `officehub-product-angles` | Give it one photo of an office-furniture item plus its dimensions (W x D x H). Claude writes one ready-to-paste prompt per angle (front, 3/4, sides, back, top, detail), with defaults for chairs, desks, workstations and storage. You generate each image in Gemini (or ChatGPT) with the original photo attached, then upload the results back so Claude can check them. It then prepares file names, Arabic/English alt text and the AI label for upload. No API key needed. |
+| `officehub-seo` | SEO toolkit for officehub.sa: site and page audits, technical SEO, schema, product and category pages, Arabic and English keywords and content, AI search (GEO), local SEO, hreflang, content briefs and SEO plans. Knows the Saudi market and Shopify/WooCommerce. Adapted from the MIT-licensed claude-seo project (see `plugins/officehub-seo/skills/officehub-seo/LICENSE.txt`). No API key needed. |
+
+### Fill in the OfficeHub profile
+
+`plugins/officehub-seo/skills/officehub-seo/references/officehub-profile.md` holds the business
+facts the SEO skill uses on every run: platform, URL pattern, cities, delivery and installation,
+NAP, CR and VAT numbers, competitors, brand voice. Fields marked `TODO` are unknown; Claude will
+ask for them instead of guessing. Fill them in (and bump the plugin version) so every run starts
+with the right facts.
 
 ## Install in claude.ai, the desktop app or Cowork
 

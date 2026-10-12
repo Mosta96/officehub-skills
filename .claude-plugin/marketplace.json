@@ -10,14 +10,14 @@
       "name": "officehub-product-angles",
       "displayName": "OfficeHub Product Angles",
       "source": "./plugins/officehub-product-angles",
-      "description": "Use when the user shares one photo of a furniture item plus its dimensions and wants product images of it from the other angles (front, 3/4, sides, back, top, detail). Works in Claude chat with no API key.",
+      "description": "Turn one photo of an office-furniture item plus its dimensions into ready-to-paste prompts for every other angle (front, 3/4, sides, back, top, detail), check the results, and prepare file names, Arabic/English alt text and the AI label for upload. Works in Claude chat with no API key.",
       "category": "OfficeHub"
     },
     {
       "name": "officehub-seo",
       "displayName": "OfficeHub SEO",
       "source": "./plugins/officehub-seo",
-      "description": "Full SEO toolkit - site and page audits, technical SEO, schema, E-E-A-T content, AI search (GEO), local, e-commerce, hreflang, keyword clusters, content briefs and SEO plans.",
+      "description": "SEO toolkit for officehub.sa and any website: site and page audits, technical SEO, schema, product and category pages, Arabic and English keywords and content, AI search (GEO), local SEO, hreflang, content briefs and SEO plans. Knows the Saudi market and Shopify/WooCommerce. No API key needed.",
       "category": "OfficeHub"
     }
   ]

@@ -58,3 +58,31 @@ The primary keyword MUST appear in all of these:
 3. **Ignoring first 100 words:** The opening paragraph is the highest-value placement after the title and H1.
 4. **Forgetting image alt text:** A free placement opportunity that also helps image search rankings.
 5. **Counting synonyms as density:** "Web design", "website design", and "site design" are different strings. Only count exact-match appearances toward density.
+
+## Arabic Keywords (OfficeHub edition)
+
+The rules above assume English. For Arabic pages, apply these changes:
+
+- **Count variants as one keyword.** Arabic attaches the article and prepositions to the word
+  (كرسي، الكرسي، بالكرسي، وكراسي). Treat singular, plural and attached forms of the same
+  phrase as one keyword when counting density: "كرسي مكتب" = "كراسي مكتب" = "كراسي مكتبية"
+  = "الكراسي المكتبية".
+- **Pick the exact-match form from the SERP**, not from a dictionary. Search the phrase on
+  google.com.sa and use the form the top results use in their titles. Plural forms
+  ("كراسي مكتبية") are often the head term for category pages, singular ("كرسي مكتب طبي")
+  for product pages.
+- **Lower the word-count expectations by about 20%.** Arabic needs fewer words than English to
+  say the same thing, because of the attached forms. A 400-word English minimum is roughly
+  320 Arabic words.
+- **Spelling variants are separate strings for search.** ة/ه, أ/ا and ى/ي are often typed
+  without care ("طاولة" vs "طاوله"). Use the correct spelling on the page. Do not stuff
+  misspellings, but you can cover one common variant in alt text or the FAQ.
+- **English and Latin-script queries are real.** Saudi buyers also search in English
+  ("office chair riyadh") and by brand or model. Put English product names, model numbers
+  and dimensions in the Arabic page too, and keep the English page as its own optimized
+  page (see `workflows/seo-hreflang/WORKFLOW.md`).
+- **Do not translate keywords.** Research Arabic and English keywords separately. The Arabic
+  search for a product is often not a translation of the English one ("مكتب مدير" vs
+  "executive desk").
+
+See `references/saudi-market.md` for the full Arabic keyword method.

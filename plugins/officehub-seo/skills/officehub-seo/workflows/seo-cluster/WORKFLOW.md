@@ -301,4 +301,4 @@ After cluster planning or execution completes, offer:
 
 ## FLOW Framework Integration
 
-For prompt-guided keyword research and gap analysis, use `/seo flow find [url|topic]`: FLOW's 5 find-stage prompts complement the SERP-overlap clustering methodology with structured discovery prompts.
+For prompt-guided keyword research in Arabic and English, use the flow find stage (`workflows/seo-flow/references/prompts/find/keyword-research-ar-en.md`); it complements the SERP-overlap clustering methodology.

@@ -1,8 +1,8 @@
 {
   "name": "officehub-product-angles",
   "displayName": "OfficeHub Product Angles",
-  "version": "1.0.0",
-  "description": "Use when the user shares one photo of a furniture item plus its dimensions and wants product images of it from the other angles (front, 3/4, sides, back, top, detail). Works in Claude chat with no API key.",
+  "version": "1.1.0",
+  "description": "Turn one photo of an office-furniture item plus its dimensions into ready-to-paste prompts for every other angle (front, 3/4, sides, back, top, detail), check the results, and prepare file names, Arabic/English alt text and the AI label for upload. Works in Claude chat with no API key.",
   "author": {
     "name": "OfficeHub"
   },

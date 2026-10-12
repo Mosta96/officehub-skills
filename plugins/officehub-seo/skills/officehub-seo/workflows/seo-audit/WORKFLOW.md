@@ -4,8 +4,8 @@
 
 ## Process
 
-1. **Render homepage**: use `python3 scripts/render_page.py <url> --mode auto --json` to capture raw HTML, rendered HTML, extracted text, SPA status, and accessibility data when needed
-2. **Detect business type**: analyze homepage signals per seo orchestrator
+1. **Fetch homepage**: use `python3 scripts/fetch_page.py <url> --output home.html --json --max-text 2000` to capture raw HTML, status, headers and a JSON-LD summary (headless rendering is not bundled in this edition; if content looks JavaScript-only, say so)
+2. **Detect business type**: analyze homepage signals per seo orchestrator (officehub.sa: e-commerce, use `references/officehub-profile.md`, `references/saudi-market.md` and `references/platform-notes.md`)
 3. **Crawl site**: follow internal links up to 500 pages, respect robots.txt
 4. **Delegate to subagents** (if available, otherwise run inline sequentially):
    - `seo-technical` -- robots.txt, sitemaps, canonicals, Core Web Vitals, security headers
@@ -19,12 +19,12 @@
    - `seo-local` -- GBP signals, NAP consistency, reviews, local schema, industry-specific local factors (spawn when Local Service industry detected: brick-and-mortar, SAB, or hybrid business type)
    - `seo-maps` -- Geo-grid rank tracking, GBP audit, review intelligence, competitor radius mapping (spawn when Local Service detected AND DataForSEO MCP available)
    - `seo-google` -- CWV field data (CrUX), URL indexation (GSC), organic traffic (GA4) (spawn when Google API credentials detected via `python3 scripts/google_auth.py --check`)
-   - `seo-matomo` -- Matomo Reporting API: organic traffic, landing pages, device / country splits, referrer analysis (spawn when Matomo credentials detected via `python3 scripts/matomo_auth.py --check`; runs alongside `seo-google` when both are configured, or as a GA4 alternative when GA4 is not)
-   - `seo-backlinks` -- Backlink profile data: DA/PA, referring domains, anchor text, toxic links (spawn when Moz or Bing API credentials detected via `python3 scripts/backlinks_auth.py --check`, or always include Common Crawl domain-level metrics)
+   - `seo-matomo` -- Matomo Reporting API: organic traffic, landing pages, device / country splits, referrer analysis (needs credentials and a script not bundled in this edition: skip, or analyze a pasted Matomo export)
+   - `seo-backlinks` -- Backlink profile data: DA/PA, referring domains, anchor text, toxic links (free path only in this edition: Common Crawl domain-level metrics via `scripts/commoncrawl_graph.py`, plus pasted exports)
    - `seo-cluster` -- Semantic clustering analysis (spawn when content strategy signals detected: blog, pillar pages, topic clusters)
    - `seo-sxo` -- Search experience analysis: page-type mismatch, user stories, persona scoring (always include in full audits)
-   - `seo-drift` -- Drift analysis: compare against stored baseline (spawn when drift baseline exists for the URL via `python3 scripts/drift_history.py <url>`)
-   - `seo-ecommerce` -- Product schema, marketplace intelligence (spawn when E-commerce industry detected)
+   - `seo-drift` -- Drift analysis: compare against stored baseline (not bundled in this edition: compare with a previous audit only if the user pastes it)
+   - `seo-ecommerce` -- Product schema, Saudi market comparison (spawn when E-commerce industry detected; always for officehub.sa)
 5. **Score** -- aggregate into SEO Health Score (0-100)
 6. **Persist audit artifacts** -- write all outputs under `{domain}-audit/`
 7. **Report** -- generate prioritized action plan and optional PDF/HTML report
@@ -47,11 +47,11 @@ Delay between requests: 1 second
 - `{domain}-audit/audit-data.json`: Structured audit envelope for report generation
 - `{domain}-audit/findings/*.md`: Per-category specialist findings (`technical.md`, `content.md`, `schema.md`, `performance.md`, `visual.md`, etc.)
 - `{domain}-audit/screenshots/`: Desktop + mobile captures (if Playwright available)
-- **PDF Report** (recommended): Generate a professional A4 PDF using `python3 scripts/google_report.py --type full --data {domain}-audit/audit-data.json --domain <domain> --output-dir {domain}-audit/`. This produces a white-cover enterprise report with TOC, executive summary, charts (Lighthouse gauges, query bars, index donut), metric cards, threshold tables, prioritized recommendations with effort estimates, and implementation roadmap. Always offer PDF generation after completing an audit.
+- **Report file**: the upstream PDF generator (`google_report.py`) is not bundled in this edition. Offer a downloadable Markdown report, or .docx/.pdf if those file skills are available.
 
 ## Structured Audit Data Envelope
 
-Write `{domain}-audit/audit-data.json` with this shape so `python3 scripts/google_report.py --type full --data {domain}-audit/audit-data.json --domain <domain> --output-dir {domain}-audit/` can generate a report even when Google API data is unavailable:
+When the user wants machine-readable results, write `{domain}-audit/audit-data.json` with this shape (kept compatible with upstream claude-seo's report generator):
 
 ```json
 {
@@ -166,7 +166,7 @@ If Google API credentials are configured (`python3 scripts/google_auth.py --chec
 
 ## Matomo Integration (Optional)
 
-If Matomo credentials are configured (`python3 scripts/matomo_auth.py --check`), spawn the `seo-matomo` agent to enrich the audit with self-hosted analytics: organic visits trend, top landing pages, device and country breakdowns, channel / search-engine split, and organic keywords. Works as a GA4 alternative (when only Matomo is configured) or as a complement (when both GA4 and Matomo are present). Matomo numbers will not match GA4 exactly because of segmentation differences (`referrerType==search` vs `sessionDefaultChannelGroup == "Organic Search"`) and attribution-window rules.
+Upstream only (not bundled in this edition; use a pasted export instead): if Matomo credentials are configured, spawn the `seo-matomo` agent to enrich the audit with self-hosted analytics: organic visits trend, top landing pages, device and country breakdowns, channel / search-engine split, and organic keywords. Works as a GA4 alternative (when only Matomo is configured) or as a complement (when both GA4 and Matomo are present). Matomo numbers will not match GA4 exactly because of segmentation differences (`referrerType==search` vs `sessionDefaultChannelGroup == "Organic Search"`) and attribution-window rules.
 
 ## Google Update Correlation
 

@@ -132,7 +132,7 @@
             "offers": {
               "@type": "Offer",
               "price": "[29.99]",
-              "priceCurrency": "USD",
+              "priceCurrency": "SAR",
               "availability": "https://schema.org/InStock"
             }
           }
@@ -184,13 +184,13 @@
         "offers": {
           "@type": "Offer",
           "price": "[Price]",
-          "priceCurrency": "USD",
+          "priceCurrency": "SAR",
           "shippingDetails": {
             "@type": "OfferShippingDetails",
             "shippingRate": {
               "@type": "MonetaryAmount",
               "value": "[0]",
-              "currency": "USD"
+              "currency": "SAR"
             },
             "deliveryTime": {
               "@type": "ShippingDeliveryTime",
@@ -229,7 +229,7 @@
         "offers": {
           "@type": "Offer",
           "price": "[Price]",
-          "priceCurrency": "[Currency Code, e.g. USD]",
+          "priceCurrency": "[Currency Code, e.g. SAR]",
           "availability": "https://schema.org/InStock",
           "url": "[Product Page URL]",
           "validFrom": "[YYYY-MM-DDTHH:MM:SS+TZ]",
@@ -244,7 +244,7 @@
             "shippingRate": {
               "@type": "MonetaryAmount",
               "value": "[Shipping Cost]",
-              "currency": "[Currency Code]"
+              "currency": "[Currency Code, e.g. SAR]"
             }
           }
         },
@@ -271,6 +271,162 @@
             "url": "[Spoke Page URL]",
             "name": "[Spoke Page Title]"
           }
+        ]
+      }
+    },
+    {
+      "type": "Product (Saudi store, OfficeHub)",
+      "description": "Office-furniture product page for a Saudi store. Prices in SAR including 15% VAT, shipping and returns scoped to Saudi Arabia. Use the Arabic name/description on the Arabic URL and the English ones on the English URL; never mix languages in one block. See references/saudi-market.md.",
+      "template": {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "[اسم المنتج / Product name, in the page's language]",
+        "description": "[Product description in the page's language]",
+        "image": [
+          "[1:1 image URL]",
+          "[4:3 image URL]",
+          "[16:9 image URL]"
+        ],
+        "sku": "[SKU]",
+        "mpn": "[Manufacturer part number, if any]",
+        "gtin13": "[GTIN/EAN, if the product has one]",
+        "brand": {
+          "@type": "Brand",
+          "name": "[Brand]"
+        },
+        "category": "[e.g. Office Chairs > Ergonomic Chairs]",
+        "color": "[Colour]",
+        "material": "[e.g. Mesh, steel base]",
+        "width": {
+          "@type": "QuantitativeValue",
+          "value": "[65]",
+          "unitCode": "CMT"
+        },
+        "depth": {
+          "@type": "QuantitativeValue",
+          "value": "[60]",
+          "unitCode": "CMT"
+        },
+        "height": {
+          "@type": "QuantitativeValue",
+          "value": "[120]",
+          "unitCode": "CMT"
+        },
+        "weight": {
+          "@type": "QuantitativeValue",
+          "value": "[18]",
+          "unitCode": "KGM"
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": "[Product URL]",
+          "price": "[1150.00]",
+          "priceCurrency": "SAR",
+          "priceSpecification": {
+            "@type": "UnitPriceSpecification",
+            "price": "[1150.00]",
+            "priceCurrency": "SAR",
+            "valueAddedTaxIncluded": true
+          },
+          "availability": "https://schema.org/InStock",
+          "itemCondition": "https://schema.org/NewCondition",
+          "seller": {
+            "@type": "Organization",
+            "name": "[OfficeHub legal/brand name]"
+          },
+          "shippingDetails": {
+            "@type": "OfferShippingDetails",
+            "shippingDestination": {
+              "@type": "DefinedRegion",
+              "addressCountry": "SA"
+            },
+            "shippingRate": {
+              "@type": "MonetaryAmount",
+              "value": "[0]",
+              "currency": "SAR"
+            },
+            "deliveryTime": {
+              "@type": "ShippingDeliveryTime",
+              "handlingTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 0,
+                "maxValue": 1,
+                "unitCode": "DAY"
+              },
+              "transitTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 1,
+                "maxValue": 5,
+                "unitCode": "DAY"
+              }
+            }
+          },
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "SA",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+            "merchantReturnDays": "[7]",
+            "returnMethod": "https://schema.org/ReturnByMail",
+            "returnFees": "https://schema.org/FreeReturn"
+          }
+        }
+      }
+    },
+    {
+      "type": "FurnitureStore (Saudi showroom, OfficeHub)",
+      "description": "Showroom or warehouse with a public address in Saudi Arabia. Use only when customers can visit; otherwise use Organization. Address fields follow the Saudi National Address. Put the same NAP as Google Business Profile, character for character.",
+      "template": {
+        "@context": "https://schema.org",
+        "@type": "FurnitureStore",
+        "@id": "[https://officehub.sa/#store-riyadh]",
+        "name": "[Store name as on Google Business Profile]",
+        "alternateName": "[English or Arabic name variant]",
+        "url": "[https://officehub.sa/]",
+        "image": "[Storefront photo URL]",
+        "logo": "[Logo URL]",
+        "telephone": "[+966 11 XXX XXXX]",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "[Building no. + street name, e.g. 1234 King Fahd Rd]",
+          "addressLocality": "[Riyadh]",
+          "addressRegion": "[Riyadh Province]",
+          "postalCode": "[12345]",
+          "addressCountry": "SA"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "[24.7]",
+          "longitude": "[46.7]"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+              "Saturday",
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "[09:00]",
+            "closes": "[22:00]"
+          }
+        ],
+        "areaServed": [
+          "[Riyadh]",
+          "[Jeddah]",
+          "[Dammam]"
+        ],
+        "priceRange": "[$$]",
+        "currenciesAccepted": "SAR",
+        "paymentAccepted": "[mada, Visa, Mastercard, Apple Pay, bank transfer]",
+        "vatID": "[15-digit VAT registration number]",
+        "sameAs": [
+          "[Google Maps URL]",
+          "[Instagram URL]",
+          "[X URL]",
+          "[LinkedIn URL]"
         ]
       }
     }
