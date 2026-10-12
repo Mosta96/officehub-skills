@@ -1,7 +1,7 @@
 {
   "name": "officehub-seo",
   "displayName": "OfficeHub SEO",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "SEO toolkit for officehub.sa and any website: site and page audits, technical SEO, schema, product and category pages, Arabic and English keywords and content, AI search (GEO), local SEO, hreflang, content briefs and SEO plans. Knows the Saudi market and Shopify/WooCommerce. No API key needed.",
   "author": {
     "name": "OfficeHub"

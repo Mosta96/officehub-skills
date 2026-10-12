@@ -95,8 +95,10 @@ XML sitemap implementations.
 - The `.sa` ccTLD already targets Saudi Arabia. Plain `ar` and `en` are enough;
   use `ar-SA` / `en-SA` only if other regional versions exist or are planned.
   Never mix (`ar-SA` on one page, `ar` on its alternate).
-- `x-default` → the Arabic home page (the primary market language), unless a real
-  language-selector page exists.
+- `x-default` → the language version the site serves at its root, unless a real
+  language-selector page exists. officehub.sa serves English at `/` and Arabic at
+  `/ar/`, so `x-default` is the English home (see `references/officehub-profile.md`).
+  Moving it to Arabic is a business decision for the owner, not an SEO error.
 - Every product, collection/category, blog post and policy page needs its
   counterpart in the other language with return tags. Untranslated pages must not
   carry hreflang pointing at a page that does not exist or redirects.
