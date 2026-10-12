@@ -1,0 +1,11 @@
+{
+  "name": "officehub-seo",
+  "displayName": "OfficeHub SEO",
+  "version": "1.0.0",
+  "description": "Full SEO toolkit - site and page audits, technical SEO, schema, E-E-A-T content, AI search (GEO), local, e-commerce, hreflang, keyword clusters, content briefs and SEO plans.",
+  "author": {
+    "name": "OfficeHub"
+  },
+  "repository": "https://github.com/Mosta96/officehub-skills",
+  "license": "MIT"
+}

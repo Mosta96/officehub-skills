@@ -1,0 +1,24 @@
+{
+  "name": "officehub-skills",
+  "description": "OfficeHub team skills: furniture product angle prompts and an SEO toolkit",
+  "owner": {
+    "name": "OfficeHub",
+    "url": "https://github.com/Mosta96"
+  },
+  "plugins": [
+    {
+      "name": "officehub-product-angles",
+      "displayName": "OfficeHub Product Angles",
+      "source": "./plugins/officehub-product-angles",
+      "description": "Use when the user shares one photo of a furniture item plus its dimensions and wants product images of it from the other angles (front, 3/4, sides, back, top, detail). Works in Claude chat with no API key.",
+      "category": "OfficeHub"
+    },
+    {
+      "name": "officehub-seo",
+      "displayName": "OfficeHub SEO",
+      "source": "./plugins/officehub-seo",
+      "description": "Full SEO toolkit - site and page audits, technical SEO, schema, E-E-A-T content, AI search (GEO), local, e-commerce, hreflang, keyword clusters, content briefs and SEO plans.",
+      "category": "OfficeHub"
+    }
+  ]
+}
