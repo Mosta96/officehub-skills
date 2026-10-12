@@ -2,31 +2,36 @@
 
 > Chat edition: follow the "Chat adaptation rules" in the top-level SKILL.md for fetching, scripts, subagents, output files and API-keyed steps.
 
-Comprehensive product page optimization, marketplace intelligence, and
-competitive pricing analysis. Works standalone (on-page + schema) and with
-DataForSEO Merchant API for live Google Shopping and Amazon data.
+Product and category page optimization, Saudi market comparison and Product
+schema for an online store. Everything here runs on free sources (web fetch, web
+search, pasted exports). The upstream DataForSEO Merchant/Amazon modules were
+removed from this edition.
 
-## Commands
+For officehub.sa, load `references/officehub-profile.md`,
+`references/saudi-market.md` and `references/platform-notes.md` first.
 
-| Command | Purpose | DataForSEO? |
-|---------|---------|-------------|
-| `/seo ecommerce <url>` | Full e-commerce SEO analysis of a product page or store | Optional |
-| `/seo ecommerce products <keyword>` | Google Shopping competitive analysis | Required |
-| `/seo ecommerce gaps <domain>` | Keyword gap: organic vs Shopping visibility | Required |
-| `/seo ecommerce schema <url>` | Product schema validation and enhancement | No |
+## Asks
+
+| Ask | Purpose |
+|-----|---------|
+| ecommerce `<url>` | Full analysis of a product or category page, or the store |
+| ecommerce market `<product or keyword>` | Saudi market comparison: who ranks and sells, at what price, with what content (section 2) |
+| ecommerce schema `<url>` | Product schema validation and enhancement (section 5) |
 
 ---
 
-## 1. Product Page Analysis (No DataForSEO Needed)
+## 1. Product Page Analysis
 
 Fetch and parse any product page for on-page SEO quality.
 
 ### Workflow
 
 ```
-1. python3 scripts/render_page.py <url> --mode auto → raw/rendered HTML
-2. python3 scripts/parse_html.py --url <url>   → SEO elements
-3. Analyze product-specific signals (below)
+1. python3 scripts/fetch_page.py <url> --output page.html --json --max-text 2000
+   → saves the full HTML, prints status, headers and a JSON-LD summary
+   (or use the user's pasted page source, per SKILL.md)
+2. python3 scripts/parse_html.py page.html --url <url> --json → SEO elements
+3. Analyze product-specific signals (below), in each language version
 ```
 
 ### Product SEO Checklist
@@ -39,8 +44,8 @@ Fetch and parse any product page for on-page SEO quality.
 
 #### Meta Description
 - [ ] Contains product keyword + benefit
-- [ ] Includes price or "from $XX" (triggers rich snippet interest)
-- [ ] Call-to-action present (Shop now, Buy, Free shipping)
+- [ ] Includes price ("from 1,150 SAR" / "ابتداءً من 1,150 ريال") when competitive
+- [ ] Call-to-action present (اطلب الآن, free delivery and installation, WhatsApp)
 - [ ] Under 155 characters
 
 #### Heading Structure
@@ -64,9 +69,16 @@ Fetch and parse any product page for on-page SEO quality.
 
 #### Content Quality
 - [ ] Unique product description (not manufacturer copy-paste)
-- [ ] Word count >= 200 for product description body
-- [ ] Specs table present (not just prose)
+- [ ] Word count >= 200 for product description body (about 160 for Arabic, see `workflows/seo-content-brief/references/keyword-density.md`)
+- [ ] Specs table present (not just prose): W × D × H cm, weight capacity, materials, mechanism, warranty
 - [ ] User reviews on-page (UGC signals)
+
+#### Saudi store signals (officehub.sa)
+- [ ] Price in SAR, VAT-inclusive, with the VAT note
+- [ ] Delivery cities and time, installation/assembly included or not
+- [ ] Warranty and return policy linked from the product page
+- [ ] WhatsApp / phone CTA; for B2B items, "request a quote" and bulk pricing
+- [ ] Arabic and English versions both complete and linked (hreflang)
 
 ### Scoring
 
@@ -81,133 +93,48 @@ Fetch and parse any product page for on-page SEO quality.
 
 ---
 
-## 2. Google Shopping Intelligence (DataForSEO Merchant API)
+## 2. Saudi Market Comparison (free)
 
-Live competitive analysis from Google Shopping results.
-
-### Cost Guardrail (MANDATORY)
-
-Before EVERY Merchant API call:
-```bash
-python3 scripts/dataforseo_costs.py check merchant_google_products_search
-```
-
-- `"status": "approved"` -- proceed
-- `"status": "needs_approval"` -- show cost, ask user
-- `"status": "blocked"` -- stop, inform user
-
-After each call:
-```bash
-python3 scripts/dataforseo_costs.py log merchant_google_products_search <cost>
-```
+Replaces upstream's paid Google Shopping, Amazon and keyword-gap modules. Use web
+search (results for Saudi Arabia, Arabic and English) and web fetch. Mark every
+number that came from a sample as "sampled", not as market data.
 
 ### Workflow
 
-```bash
-# Product search: who sells what at what price
-python3 scripts/dataforseo_merchant.py search "<keyword>" --marketplace google
-
-# Seller analysis: merchant ratings and dominance
-python3 scripts/dataforseo_merchant.py sellers "<keyword>"
-
-# Normalize results for analysis
-python3 scripts/dataforseo_normalize.py results.json --module merchant
-```
+1. **Pick 3–5 money keywords** for the product or category, in Arabic and English
+   (method: `references/saudi-market.md` §2).
+2. **SERP snapshot** per keyword: which stores rank in the top 10, whether there are
+   Shopping/product units, ads, maps, AI Overviews, and which page types win
+   (category vs product vs blog).
+3. **Competitor pages:** fetch the top 3 ranking store pages. Record title pattern,
+   H1, price (SAR, VAT incl.?), delivery and installation promise, warranty, spec
+   table, review count, image count, schema types (from the JSON-LD summary).
+4. **Marketplaces:** search Noon and Amazon.sa for the same product type. Note the
+   naming buyers see, price range and the attributes in titles (size, material,
+   colour, "طبي"). Use them as benchmarks, not as competitors to copy.
+5. **Merchant Center:** if the user can share a Merchant Center or Search Console
+   export, analyze it. Otherwise list what the feed needs (SAR prices incl. VAT,
+   GTIN where available, title in the landing page's language, `shipping` for SA).
 
 ### Analysis Outputs
 
-#### Pricing Intelligence
-- Price distribution: min, max, median, P25, P75
-- Price outliers (> 2 standard deviations from median)
-- Price-to-rating correlation
-- Currency normalization to USD (or user-specified)
+#### Price position
+- Sampled price range and median for the product type, in SAR
+- Where officehub.sa sits; whether competitors show VAT-inclusive prices
 
-#### Seller Landscape
-- Top 10 sellers by listing count
-- Merchant rating distribution
-- Free shipping prevalence
-- New vs established sellers
+#### Offer comparison
+- Delivery time, free delivery threshold, installation, warranty, returns:
+  officehub.sa vs each sampled competitor (table)
 
-#### Product Listing Quality
-- Title keyword patterns in top listings
-- Average rating and review count benchmarks
-- Image count per listing
-- Availability status distribution
+#### Content gaps
+- Attributes and questions competitors answer that officehub.sa does not
+- Page types that rank but are missing on officehub.sa (e.g. a "كراسي مكتبية طبية"
+  category, a buying guide)
 
-Load `workflows/seo-ecommerce/references/marketplace-endpoints.md` for full API parameter details.
+#### Gap table
 
----
-
-## 3. Amazon Marketplace (DataForSEO)
-
-Cross-marketplace intelligence comparing Google Shopping and Amazon.
-
-### Cost Guardrail (MANDATORY)
-
-```bash
-python3 scripts/dataforseo_costs.py check merchant_amazon_products_search
-```
-
-Amazon endpoints are in the `warn_endpoints` set -- always requires user approval.
-
-### Workflow
-
-```bash
-# Amazon product search
-python3 scripts/dataforseo_merchant.py search "<keyword>" --marketplace amazon
-
-# Cross-marketplace comparison
-python3 scripts/dataforseo_merchant.py compare "<keyword>"
-```
-
-### Cross-Marketplace Report
-
-| Metric | Google Shopping | Amazon |
-|--------|---------------|--------|
-| Avg price | $ | $ |
-| Median rating | X.X | X.X |
-| Avg review count | N | N |
-| Top seller share | % | % |
-| Free shipping % | % | % |
-
----
-
-## 4. Marketplace Keyword Gaps
-
-Identify mismatches between organic and Shopping visibility.
-
-### Workflow
-
-1. Fetch organic rankings via seo-dataforseo:
-   `dataforseo_labs_google_ranked_keywords` for domain
-2. Fetch Google Shopping presence through the Merchant REST script (not an
-   MCP tool; the cost-ledger key is `merchant_google_products_search`):
-   `python3 scripts/dataforseo_merchant.py search <keyword>`
-   for the top organic keywords
-3. Cross-reference results
-
-### Gap Types
-
-| Gap Type | Meaning | Action |
-|----------|---------|--------|
-| **Organic Only** | Ranks organically but no Shopping ads | Create Google Merchant Center feed, bid on these keywords |
-| **Shopping Only** | Shopping visibility but weak/no organic | Create content (buying guides, comparison pages) for these keywords |
-| **Both Present** | Visible in both channels | Optimize: ensure price consistency, enhance schema |
-| **Neither** | No visibility in either | Low priority unless high volume |
-
-### Output Format
-
-```
-## Keyword Gap Analysis: example.com
-
-### Opportunities: Organic → Shopping (12 keywords)
-| Keyword | Organic Pos | Volume | CPC | Recommended Action |
-|---------|------------|--------|-----|-------------------|
-
-### Opportunities: Shopping → Organic (8 keywords)
-| Keyword | Shopping Rank | Volume | CPC | Content Type Needed |
-|---------|-------------|--------|-----|-------------------|
-```
+| Keyword (AR / EN) | Who ranks | Page type that wins | officehub.sa page | Gap / action |
+|---|---|---|---|---|
 
 ---
 
@@ -283,10 +210,10 @@ Confirmed required fields are `name`, `image`, and `offers`; use `Offer`, not `A
 | **seo-schema** | Delegates Product schema generation; reuses validation logic |
 | **seo-images** | Product image audit (alt text, format, dimensions), plus `DigitalSourceType: TrainedAlgorithmicMedia` IPTC label for AI-generated product images (Merchant Center requirement) |
 | **seo-content** | Product description E-E-A-T and uniqueness analysis |
-| **seo-dataforseo** | Organic keyword rankings for gap analysis |
 | **seo-technical** | Core Web Vitals for product pages (LCP on hero image) |
 | **seo-hreflang** | Region-specific result units: in the EEA, product and (since 2026-09-18) local business queries can show aggregator and supplier units; the EEA, South Africa and Türkiye also have structured data carousels, each with its own eligibility rules (documented 2026-09-08) |
-| **seo-google** | GSC indexation + Performance data for product URLs (NOT Merchant Center feed validation, that is done in Merchant Center / the **Merchant API**; the legacy Content API for Shopping sunsets 2026-08-18) |
+| **seo-hreflang** (ar/en) | Arabic and English product pages linked and complete |
+| Search Console export (pasted) | Indexation + Performance data for product URLs (Merchant Center feed validation happens in Merchant Center itself) |
 
 ## UCP: Universal Commerce Protocol (live)
 
@@ -332,11 +259,9 @@ UCP itself is live; what's early is broad merchant adoption. Flag a literal
 | Error | Cause | Response |
 |-------|-------|----------|
 | No Product schema found | Page lacks JSON-LD | Analyze page content, generate recommended schema |
-| DataForSEO credentials missing | Env vars not set | Run analysis without marketplace data, note limitation |
-| Cost check blocked | Daily budget exceeded | Inform user, offer free-only analysis |
-| Empty Shopping results | No products for keyword | Suggest broader keyword, check location settings |
-| Amazon API timeout | Network/rate limit | Retry with backoff, fall back to Google-only |
-| Invalid URL | Malformed input | Validate via `google_auth.validate_url()`, show error |
+| Search results not Saudi | Web search ignores location | Add "السعودية" / city to the query, prefer .sa and Saudi store results, note the limitation |
+| Competitor page blocks fetch | Bot protection | Use the search snippet and say the page was not fetched |
+| Invalid URL | Malformed input | Show the error and ask for the full URL |
 | Non-product page | URL is category/homepage | Run the store-level checks (UCP profile, category structure, feeds) and ask for a product URL for the product-level checks |
 
 ---
@@ -355,16 +280,16 @@ UCP itself is live; what's early is broad merchant adoption. Flag a literal
 - Content Quality: XX/100
 - Internal Linking: XX/100
 
-### Marketplace Intelligence (if DataForSEO available)
-- Google Shopping Listings: N products found
-- Price Range: $XX - $XX (median: $XX)
-- Top Seller: [name] (XX% market share)
-- Amazon Comparison: [available/not checked]
+### Saudi Market Comparison (sampled)
+- Keywords checked: [AR / EN list]
+- Sampled price range: XX – XX SAR (median XX SAR); officehub.sa: XX SAR
+- Offer gaps vs competitors: [delivery / installation / warranty]
+- Noon / Amazon.sa naming benchmark: [notes]
 
 ### Top Recommendations
 1. [Critical] ...
 2. [High] ...
 3. [Medium] ...
 
-Generate a PDF report? Use `/seo google report`
+Offer a downloadable Markdown or .docx report if the user wants one.
 ```

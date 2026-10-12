@@ -91,6 +91,25 @@ XML sitemap implementations.
 - Use Google Search Console verification for monitoring or cross-site sitemap submission when needed
 - Sitemap-based implementation recommended for cross-domain setups
 
+### 9. Bilingual Arabic/English site on a .sa domain (OfficeHub)
+- The `.sa` ccTLD already targets Saudi Arabia. Plain `ar` and `en` are enough;
+  use `ar-SA` / `en-SA` only if other regional versions exist or are planned.
+  Never mix (`ar-SA` on one page, `ar` on its alternate).
+- `x-default` → the Arabic home page (the primary market language), unless a real
+  language-selector page exists.
+- Every product, collection/category, blog post and policy page needs its
+  counterpart in the other language with return tags. Untranslated pages must not
+  carry hreflang pointing at a page that does not exist or redirects.
+- Each language version is self-canonical. Never canonicalize `/en/...` to the
+  Arabic URL (or the reverse): that removes the English page from the index.
+- Check `<html lang="ar" dir="rtl">` / `<html lang="en" dir="ltr">` match the
+  hreflang value of the same page.
+- Check that the language switcher links to the equivalent page, not the home page.
+- Platform mechanics (Shopify Markets / Translate & Adapt, WPML, Polylang,
+  TranslatePress): `references/platform-notes.md`. Cultural checks: the
+  "Arabic: Saudi Arabia / Gulf" profile in
+  `workflows/seo-hreflang/references/cultural-profiles.md`.
+
 ## Common Mistakes
 
 | Issue | Severity | Fix |
@@ -215,7 +234,7 @@ Key rules:
 When analyzing a multi-language site, go beyond technical hreflang validation to assess
 whether the content is culturally adapted for each target market.
 
-Load `workflows/seo-hreflang/references/cultural-profiles.md` for pre-built profiles (DACH, Francophone, Hispanic, Japanese).
+Load `workflows/seo-hreflang/references/cultural-profiles.md` for pre-built profiles (Arabic: Saudi/Gulf, DACH, Francophone, Hispanic, Japanese).
 
 **Assessment steps:**
 1. Identify all language versions and their target markets
@@ -260,7 +279,7 @@ reference tables per locale.
 ## Reference Files
 
 Load on-demand as needed (do NOT load all at startup):
-- `workflows/seo-hreflang/references/cultural-profiles.md`: DACH, Francophone, Hispanic, Japanese cultural adaptation profiles
+- `workflows/seo-hreflang/references/cultural-profiles.md`: Arabic (Saudi/Gulf), DACH, Francophone, Hispanic, Japanese cultural adaptation profiles
 - `workflows/seo-hreflang/references/locale-formats.md`: Number, date, currency, address, phone format tables per locale
 - `workflows/seo-hreflang/references/content-parity.md`: Content parity audit methodology and scoring
 - `workflows/seo-hreflang/references/machine-translation-qa.md`: Flags unreviewed machine translation, which Google's spam policy treats as scaled content abuse

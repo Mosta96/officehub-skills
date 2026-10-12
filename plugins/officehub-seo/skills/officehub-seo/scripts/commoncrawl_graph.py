@@ -33,11 +33,23 @@ except ImportError:
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _SCRIPTS_DIR)
 try:
-    from backlinks_auth import get_cache_dir
     from google_auth import validate_url
 except ImportError:
-    print("Error: backlinks_auth.py and google_auth.py required in scripts/", file=sys.stderr)
+    print("Error: google_auth.py required in scripts/", file=sys.stderr)
     sys.exit(1)
+
+# Upstream reads the cache path from backlinks_auth.py (API-key config), which
+# this no-key edition does not bundle. Same default location, no config file.
+CACHE_DIR = os.environ.get(
+    "COMMONCRAWL_CACHE_DIR",
+    os.path.expanduser("~/.cache/claude-seo/commoncrawl"),
+)
+
+
+def get_cache_dir() -> str:
+    """Get the Common Crawl cache directory, creating it if needed."""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    return CACHE_DIR
 
 # Common Crawl web graph base URL (HTTP access to S3 bucket)
 CC_GRAPH_BASE = "https://data.commoncrawl.org/projects/hyperlinkgraph"

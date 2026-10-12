@@ -100,8 +100,13 @@ def order_action(
     name: str = "Order online",
     accepted_payment_method: Optional[list[str]] = None,
     delivery_method: Optional[list[str]] = None,
+    currency: str = "SAR",
+    language: str = "ar-SA",
 ) -> dict:
     """Build an OrderAction potentialAction block.
+
+    ``currency`` and ``language`` default to OfficeHub's market (SAR, ar-SA);
+    pass e.g. ``en-SA`` for the English storefront.
 
     Attach the result to a Product or Service via:
 
@@ -114,7 +119,7 @@ def order_action(
         "target": {
             "@type": "EntryPoint",
             "urlTemplate": order_url,
-            "inLanguage": "en-US",
+            "inLanguage": language,
             "actionPlatform": [
                 "https://schema.org/DesktopWebPlatform",
                 "https://schema.org/MobileWebPlatform",
@@ -129,7 +134,7 @@ def order_action(
             "eligibleTransactionVolume": {
                 "@type": "PriceSpecification",
                 "minPrice": 0,
-                "priceCurrency": "USD",
+                "priceCurrency": currency,
             },
         },
         "merchant": {"@type": "Organization", "name": merchant},
@@ -283,6 +288,8 @@ def main() -> int:
     ord_p.add_argument("--name", default="Order online")
     ord_p.add_argument("--accepted-payment-method", nargs="*", default=None)
     ord_p.add_argument("--delivery-method", nargs="*", default=None)
+    ord_p.add_argument("--currency", default="SAR", help="ISO 4217 code (default SAR).")
+    ord_p.add_argument("--language", default="ar-SA", help="BCP 47 tag (default ar-SA).")
 
     disc = sub.add_parser("discussion", help="DiscussionForumPosting.")
     disc.add_argument("--headline", required=True)
@@ -322,6 +329,8 @@ def main() -> int:
             args.merchant, order_url=args.order_url, name=args.name,
             accepted_payment_method=args.accepted_payment_method,
             delivery_method=args.delivery_method,
+            currency=args.currency,
+            language=args.language,
         )
     elif args.kind == "discussion":
         ic: dict | None = {"LikeAction": args.likes} if args.likes else None

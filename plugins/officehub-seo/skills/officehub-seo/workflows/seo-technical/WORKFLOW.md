@@ -133,7 +133,7 @@ Allow: /
 - See seo-schema skill for full analysis
 
 ### 8. JavaScript Rendering
-- Method: `python3 scripts/agentic_check.py <url> --json` reports visible words in the raw HTML (`server-rendered`); compare with `render_page.py <url> --mode always --json` when Chromium is available. Without Chromium, report the raw-HTML result and say rendered content was not compared.
+- Method: `python3 scripts/agentic_check.py <url> --json` reports visible words in the raw HTML (`server-rendered`); rendered comparison (`render_page.py`) is not bundled in this edition, so report the raw-HTML result and say rendered content was not compared.
 - Check if content visible in initial HTML vs requires JS
 - Identify client-side rendered (CSR) vs server-side rendered (SSR)
 - Flag SPA frameworks (React, Vue, Angular) that may cause indexing issues
@@ -181,9 +181,7 @@ to `seo-agentic` for the rest:
   agents that do not run JavaScript.
 - A 5xx robots.txt, which compliant crawlers read as "disallow everything".
 
-```bash
-python3 scripts/agent_ux_check.py https://example.com --json
-```
+`agent_ux_check.py` is not bundled in this edition: apply the checks above by reading the fetched HTML and robots.txt.
 
 The Agent-UX 0-100 score above is a local heuristic. Keep it distinct from the
 Lighthouse fraction, and surface its findings as opportunities, not failures.
@@ -223,7 +221,7 @@ If DataForSEO MCP tools are available, use `on_page_instant_pages` for real page
 
 ## Google API Integration (Optional)
 
-If Google API credentials are configured, use `python3 scripts/pagespeed_check.py <url> --json` for real PSI + CrUX field data (replaces lab-only CWV estimates), `python3 scripts/crux_history.py <url> --form-factor PHONE --json` for 25-week CWV trends (use PHONE: the all-devices view can hide a mobile failure), and `python3 scripts/gsc_inspect.py <url> --json` for real indexation status per URL.
+If Google API credentials are configured, use `python3 scripts/pagespeed_check.py <url> --json` for real PSI + CrUX field data (replaces lab-only CWV estimates), and, upstream only (not bundled here), CrUX history and GSC URL inspection scripts. In this edition, ask for a pasted Search Console export or URL Inspection result instead.
 
 ## Auditing a Local or Private Host
 

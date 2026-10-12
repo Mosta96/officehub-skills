@@ -2,6 +2,13 @@
 
 > Chat edition: follow the "Chat adaptation rules" in the top-level SKILL.md for fetching, scripts, subagents, output files and API-keyed steps.
 
+> **Saudi Arabia (officehub.sa):** the statistics and citation lists below are
+> US-sourced. For Saudi businesses use `references/saudi-market.md` §5 instead:
+> skip Yelp, BBB, Nextdoor, US YellowPages and US data aggregators (Data Axle,
+> Neustar); check Google Business Profile, Apple Business Connect, Bing Places and
+> verified Saudi directories; NAP in National Address format with `+966` phone, in
+> Arabic and English. Use the FurnitureStore template in `schema/templates.json`.
+
 ## Key Statistics
 
 | Metric | Value | Source |
@@ -143,9 +150,10 @@ Citations declining for traditional pack rankings but **3 of top 5 AI visibility
   - Flag any discrepancies between these three sources
 - Citation presence on Tier 1 directories (check via WebFetch or site: search patterns):
   - Google Business Profile signals on page
-  - Yelp: `site:yelp.com "Business Name"`
-  - BBB: `site:bbb.org "Business Name"`
+  - Yelp: `site:yelp.com "Business Name"` (US/UK markets only)
+  - BBB: `site:bbb.org "Business Name"` (US/Canada only)
   - Facebook business page references
+  - Saudi businesses: Instagram/Snapchat/X profiles and Saudi directories found per `references/saudi-market.md` §5
 - **Apple Maps / Apple business listings** awareness: claim and maintain Apple listings; treat Apple Business unified-platform launch/rename claims as TechRadar-sourced and verify against Apple primary before asserting.
 - Bing Places awareness (powers ChatGPT, Copilot, Alexa -- recommend claiming and optimizing)
 - Industry-specific directory recommendations: load `references/local-schema-types.md` for per-vertical citation sources
@@ -298,4 +306,4 @@ If DataForSEO MCP tools are available, use `business_data_business_listings_sear
 
 ## FLOW Framework Integration
 
-For prompt-guided local optimization, use `/seo flow local <url>`, FLOW's 11 local-stage prompts cover GBP optimization, meta descriptions, title tags, and structured local audit workflows.
+For prompt-guided Google Business Profile work, use the flow local stage (`workflows/seo-flow/references/prompts/local/gbp-profile.md`).

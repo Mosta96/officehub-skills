@@ -32,13 +32,15 @@ Output (JSON when ``--json`` is set)::
       "matches": {"filler": [...], "ai_patterns": [...]},
       "tokens":                 int,
       "unique_tokens":          int,
-      "coverage":               present only for CJK-dominant text, e.g.
+      "coverage":               present only for CJK- or Arabic-dominant text, e.g.
                                  {"script": "cjk", "entity_density": "not_computed",
                                   "phrase_lists": "english_only"}: the
-                                 filler/AI-pattern phrase lists and the
-                                 capitalisation-based entity heuristic are
-                                 English-only, so a CJK score is not directly
-                                 comparable to a Latin-script one.
+                                 capitalisation-based entity heuristic is
+                                 Latin-only, so density rests on numbers alone
+                                 and a CJK/Arabic score is not directly
+                                 comparable to a Latin-script one. Arabic text
+                                 is checked against a short Arabic phrase list
+                                 ("phrase_lists": "english_and_arabic").
     }
 
 Attribution
@@ -147,11 +149,60 @@ _AI_PATTERNS: tuple[str, ...] = (
 )
 
 
-# Latin words, Hangul eojeol, and CJK/kana characters. Korean is space
-# delimited so a run of syllables is one token; Chinese and Japanese are
-# unspaced, so one ideograph or kana counts as one token.
+# Arabic filler and AI-typical phrasings (OfficeHub edition). Same idea as the
+# English lists: padding openers/closers and stock phrases common in machine
+# Arabic marketing copy. Text and patterns both go through _normalize_arabic,
+# so spelling variants (with or without hamza, tanween, taa marbuta) match.
+_FILLER_PHRASES_AR: tuple[str, ...] = (
+    "في عالمنا اليوم",
+    "في هذا المقال سوف نتعرف",
+    "في هذا المقال سنتعرف",
+    "في هذا المقال سنستعرض",
+    "كما ذكرنا سابقاً",
+    "مما لا شك فيه",
+    "لا شك أن",
+    "من الجدير بالذكر",
+    "تجدر الإشارة إلى",
+    "في نهاية المطاف",
+    "وفي الختام",
+    "بشكل عام",
+)
+
+_AI_PATTERNS_AR: tuple[str, ...] = (
+    "في ظل التطورات المتسارعة",
+    "في عالم يتسم",
+    "يلعب دوراً محورياً",
+    "يلعب دوراً حيوياً",
+    "تجربة فريدة من نوعها",
+    "عالم من الإمكانيات",
+    "يأخذك في رحلة",
+    "الارتقاء بتجربتك",
+    "لا مثيل لها",
+    "الخيار الأمثل لكل من",
+)
+
+# Tashkeel (harakat, tanween, shadda, sukun, superscript alef) and tatweel.
+_AR_DIACRITICS_RE = re.compile(r"[\u064b-\u0652\u0670\u0640]")
+_AR_ALEF_RE = re.compile(r"[\u0622\u0623\u0625]")
+
+
+def _normalize_arabic(text: str) -> str:
+    """Fold Arabic spelling variants so phrase lists match: drop diacritics and
+    tatweel, alef forms -> bare alef, taa marbuta -> haa. No-op for other scripts."""
+    text = _AR_DIACRITICS_RE.sub("", text)
+    text = _AR_ALEF_RE.sub("\u0627", text)
+    return text.replace("\u0629", "\u0647")
+
+
+# Latin words, Arabic words, Hangul eojeol, and CJK/kana characters. Arabic
+# and Korean are space delimited so a run of letters is one token (Arabic
+# clitics such as "و" and "ال" stay attached); Chinese and Japanese are
+# unspaced, so one ideograph or kana counts as one token. The Arabic branch
+# starts on a letter, so Arabic punctuation and Arabic-Indic digits are not words.
 _TOKEN_RE = re.compile(
     r"[A-Za-z][A-Za-z'\-]*"
+    r"|[\u0621-\u064a\u066e-\u06d3\u06fa-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufefc]"
+    r"[\u0621-\u065f\u0670-\u06d3\u06fa-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufefc]*"
     r"|[\uac00-\ud7a3]+"
     r"|[\u3041-\u3096\u30a1-\u30fa\u30fc]"
     r"|[\u3400-\u4dbf\u4e00-\u9fff]"
@@ -171,26 +222,30 @@ _ENTITY_RE = re.compile(r"\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b")
 _CJK_CHAR_RE = re.compile(
     r"[가-힣ぁ-ゖァ-ヺー㐀-䶿一-鿿]"
 )
+_ARABIC_CHAR_RE = re.compile(r"[\u0621-\u064a\u066e-\u06d3\u0750-\u077f\u08a0-\u08ff]")
 _LATIN_CHAR_RE = re.compile(r"[A-Za-z]")
 
 
 def _detect_script(text: str) -> str | None:
-    """Return "cjk" when CJK/Hangul/kana characters dominate ``text``, else None.
+    """Return "cjk" or "arabic" when that script dominates ``text``, else None.
 
     ``None`` covers Latin-script and any other text; the coverage note is
-    only added when the score's known-unreliable-for-CJK signals apply.
+    only added when the score's known-unreliable signals apply.
     """
-    cjk_chars = len(_CJK_CHAR_RE.findall(text))
-    if cjk_chars == 0:
-        return None
     latin_chars = len(_LATIN_CHAR_RE.findall(text))
-    return "cjk" if cjk_chars >= latin_chars else None
+    cjk_chars = len(_CJK_CHAR_RE.findall(text))
+    if cjk_chars and cjk_chars >= latin_chars:
+        return "cjk"
+    arabic_chars = len(_ARABIC_CHAR_RE.findall(text))
+    if arabic_chars and arabic_chars >= latin_chars:
+        return "arabic"
+    return None
 
 
 def _count_phrase_hits(text: str, patterns: Iterable[str]) -> list[str]:
     """Return the patterns that appear at least once in ``text`` (case-insensitive)."""
-    lowered = text.lower()
-    return [p for p in patterns if p in lowered]
+    lowered = _normalize_arabic(text.lower())
+    return [p for p in patterns if _normalize_arabic(p) in lowered]
 
 
 def _repetition_score(tokens: list[str]) -> float:
@@ -222,8 +277,8 @@ def analyse(text: str) -> dict:
     n_tokens = len(tokens)
     unique = len(set(tokens))
 
-    filler_hits = _count_phrase_hits(text, _FILLER_PHRASES)
-    ai_hits = _count_phrase_hits(text, _AI_PATTERNS)
+    filler_hits = _count_phrase_hits(text, _FILLER_PHRASES + _FILLER_PHRASES_AR)
+    ai_hits = _count_phrase_hits(text, _AI_PATTERNS + _AI_PATTERNS_AR)
 
     # Density: entities + numbers per 100 tokens. A typical high-density
     # article (case studies, data journalism) lands at ~5+; a generic
@@ -290,6 +345,12 @@ def analyse(text: str) -> dict:
             "entity_density": "not_computed",
             "phrase_lists": "english_only",
         }
+    elif script == "arabic":
+        result["coverage"] = {
+            "script": "arabic",
+            "entity_density": "not_computed",
+            "phrase_lists": "english_and_arabic",
+        }
 
     return result
 
@@ -337,7 +398,7 @@ def main() -> int:
     result = analyse(text)
 
     if args.json:
-        json.dump(result, sys.stdout, indent=2)
+        json.dump(result, sys.stdout, indent=2, ensure_ascii=False)
         sys.stdout.write("\n")
     else:
         print(f"Overall quality:       {result['overall_quality']}/100")

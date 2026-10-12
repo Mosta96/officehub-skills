@@ -1,6 +1,6 @@
 ---
 name: officehub-seo
-description: Full SEO toolkit - site and page audits, technical SEO, schema, E-E-A-T content, AI search (GEO), local, e-commerce, hreflang, keyword clusters, content briefs and SEO plans.
+description: Use when the user wants SEO work on officehub.sa or any website - site or page audits, technical SEO, schema, product and category pages, Arabic and English content, keyword research, AI search (GEO), local SEO and Google Business Profile, hreflang, content briefs or SEO plans. Also triggers on Arabic requests such as سيو، تحسين محركات البحث، الكلمات المفتاحية، تصدر نتائج جوجل. Knows OfficeHub's Saudi office-furniture store, Arabic keywords and Shopify/WooCommerce.
 license: MIT (adapted from AgriciDaniel/claude-seo v2.4.2, see LICENSE.txt)
 ---
 
@@ -14,6 +14,13 @@ no API keys, no setup.
 
 ## How to use this skill
 
+0. **OfficeHub context.** When the work is about officehub.sa (or the user does
+   not name another site), load `references/officehub-profile.md` and
+   `references/saudi-market.md` first. They replace industry detection and the
+   US/English defaults in the workflows (USD, Yelp/BBB, English-only keyword
+   rules). For fixes, also load `references/platform-notes.md` so each fix says
+   where to make it in Shopify or WooCommerce. Ask once for any `TODO` field the
+   workflow needs; never invent business facts.
 1. Work out which workflow the user wants from the table below. The user can
    say it in plain words ("audit example.com", "check the schema on this page")
    or with the original command style (`/seo audit example.com`); treat both
@@ -69,8 +76,9 @@ SERPs, competitors and brand mentions. Fetch `robots.txt`, `sitemap.xml`,
 readable text rather than raw HTML, so for checks that need raw markup
 (JSON-LD, meta tags, canonicals, hreflang, headers) either:
 - run the bundled scripts in code execution if the sandbox can reach the site
-  (try `python3 scripts/fetch_page.py <url> --render never --json` once; if it
-  fails with a network error, do not retry), or
+  (try `python3 scripts/fetch_page.py <url> --output page.html --json --max-text 2000`
+  once: it saves the full HTML and prints status, headers and a JSON-LD summary;
+  if it fails with a network or DNS error, do not retry), or
 - ask the user to paste the page source (Ctrl+U / "View page source") or
   upload the saved `.html` file, then run `python3 scripts/parse_html.py
   <file> --url <url> --json`, or read it directly.
@@ -81,6 +89,10 @@ If neither is possible, analyze what is visible and mark raw-HTML checks as
 scripts listed below are bundled. If a workflow names a script that is not in
 `scripts/`, do that step by reasoning over fetched content, or skip it and say
 which check was skipped. Never `pip install` anything to make a script work.
+Named in some workflows but not bundled (don't try to run them):
+`render_page.py` (headless rendering), `agent_ux_check.py`, `google_report.py`,
+`backlinks_auth.py`, `moz_api.py`, `bing_webmaster.py`,
+`validate_backlink_report.py`, `keywordseverywhere_api.py`, `dataforseo_*.py`.
 
 Bundled scripts (standard library plus requests / beautifulsoup4 / lxml):
 `fetch_page.py`, `parse_html.py`, `content_quality.py`, `content_humanize.py`,
@@ -124,7 +136,8 @@ or a .docx/.pdf if those file skills are available.
 
 ## Core methodology (applies to every workflow)
 
-**Industry detection** from homepage signals:
+**Industry detection** from homepage signals (skip for officehub.sa: it is
+e-commerce, office furniture, per `references/officehub-profile.md`):
 - SaaS: pricing page, /features, /integrations, /docs, "free trial", "sign up"
 - Local service: phone, address, service area, "serving [city]", map embed; suggest the local workflow
 - E-commerce: /products, /collections, /cart, "add to cart", Product schema
@@ -163,6 +176,10 @@ Every recommendation carries:
 
 ## Shared references (load on demand)
 
+- `references/officehub-profile.md`: OfficeHub business facts, languages, catalogue, NAP, competitors (load first for officehub.sa)
+- `references/saudi-market.md`: Saudi/Arabic layer: Arabic keyword method, seasonality, trust signals, local SEO, Arabic technical checks
+- `references/platform-notes.md`: where fixes are made in Shopify and WooCommerce
+
 - `references/cwv-thresholds.md`: Core Web Vitals thresholds
 - `references/schema-types.md`: schema types and deprecation status
 - `references/eeat-framework.md`, `references/eeat-scoring-guide.md`: E-E-A-T criteria and scoring
@@ -170,15 +187,16 @@ Every recommendation carries:
 - `references/local-seo-signals.md`, `references/local-search-behavior.md`, `references/local-schema-types.md`, `references/local-schema-multilocation.md`: local SEO
 - `references/maps-free-apis.md`, `references/maps-gbp-checklist.md`, `references/maps-geo-grid.md`: maps
 - `references/backlink-quality.md`, `references/free-backlink-sources.md`: backlinks
-- `schema/templates.json`: ready-made JSON-LD templates
+- `schema/templates.json`: ready-made JSON-LD templates (defaults to SAR; includes "Product (Saudi store, OfficeHub)" and "FurnitureStore (Saudi showroom, OfficeHub)")
 
 Workflow-specific references live next to each workflow in
 `workflows/<name>/references/`.
 
 ## Output standard
 
+- Reply in the user's language. Copy you propose for Arabic pages (titles, meta descriptions, headings, alt text) is written in Arabic, and English copy for English pages; never translate one into the other word for word.
 - Open with the score (when the workflow scores) and the 3-5 most important findings.
-- Group findings as Critical / High / Medium / Low, each with evidence (the URL, element or value you saw) and the fix.
+- Group findings as Critical / High / Medium / Low, each with evidence (the URL, element or value you saw) and the fix, phrased as where to change it on the site's platform.
 - Mark anything you could not verify (raw HTML unavailable, data needs a key) as "not verified" rather than guessing.
 - End with a short, ordered action plan.
 - If a URL cannot be reached, say so and ask the user to check it. Never invent site content.

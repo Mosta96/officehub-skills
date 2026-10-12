@@ -206,7 +206,7 @@ Cross-reference on-page images with the image results visible in the Google SERP
 - **Format distribution**: WebP vs JPEG vs PNG in top results
 - **Opportunity score**: keywords where you have page rankings but no image presence
 
-If DataForSEO MCP is not available, inform user and suggest installing the extension.
+If DataForSEO MCP is not available (the default in this edition), skip this section and say so in one line.
 
 ---
 
@@ -303,32 +303,18 @@ Primary source (Merchant Center AI-generated content policy):
 https://support.google.com/merchants/answer/14743464
 (the ai-optimization-guide does not document DigitalSourceType/IPTC/Merchant labeling.)
 
-**Audit command:**
+`iptc_ai_label.py` is not bundled in this edition. Use exiftool on the user's
+computer (free: exiftool.org). Vocabulary values for `DigitalSourceType`:
+`trainedAlgorithmicMedia` (fully AI-generated, e.g. new product angles),
+`compositeWithTrainedAlgorithmicMedia` (AI edits over a real photo, e.g. background
+replaced), `compositeSynthetic`, `algorithmicMedia`, `digitalCapture` (real photo).
 
-```bash
-# Audit a directory for the IPTC label (counts: missing, ai, captured, etc.)
-python3 scripts/iptc_ai_label.py audit ./images/ --json
-
-# Audit a single image
-python3 scripts/iptc_ai_label.py audit ./hero.webp --json
-
-# Inject the AI label into an image
-python3 scripts/iptc_ai_label.py inject ./ai-hero.webp \
-    --source-type trainedAlgorithmicMedia
-
-# Other vocabulary values:
-#   compositeSynthetic               (mix of captured + AI elements)
-#   algorithmicMedia                 (created purely by algorithm, NOT from sampled training data)
-#   compositeWithTrainedAlgorithmicMedia (e.g. AI inpainting/outpainting over real media)
-#   digitalCapture                   (fully captured photograph)
-```
-
-**Raw exiftool equivalents** (for ad-hoc usage):
+**exiftool commands:**
 
 ```bash
 # Inject manually
 exiftool \
-  -XMP-iptcExt:DigitalSourceType="https://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia" \
+  -XMP-iptcExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia" \
   ai-generated-product.jpg
 
 # Audit: find images missing the label across a directory
@@ -417,4 +403,4 @@ For maximum image SEO, run this pipeline on each image:
 | Images behind CDN or authentication | Note that image files could not be directly accessed for size analysis. Report available metadata (alt text, dimensions, format from markup) and flag inaccessible resources. |
 | exiftool not installed | Fall back to ImageMagick for metadata. Recommend: `sudo apt install libimage-exiftool-perl` |
 | cwebp not installed | Fall back to ImageMagick or FFmpeg for WebP conversion. Recommend: `sudo apt install webp` |
-| DataForSEO MCP not available | Skip Image SERP Analysis section. Note extension is not installed. |
+| DataForSEO MCP not available | Skip Image SERP Analysis section and say so in one line. |
