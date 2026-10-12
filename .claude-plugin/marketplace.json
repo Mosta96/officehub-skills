@@ -1,6 +1,6 @@
 {
   "name": "officehub-skills",
-  "description": "OfficeHub team skills: furniture product angle prompts and an SEO toolkit",
+  "description": "OfficeHub team skills: furniture product angle prompts, an SEO toolkit and PNG to SVG vectorization",
   "owner": {
     "name": "OfficeHub",
     "url": "https://github.com/Mosta96"
@@ -18,6 +18,13 @@
       "displayName": "OfficeHub SEO",
       "source": "./plugins/officehub-seo",
       "description": "SEO toolkit for officehub.sa and any website: site and page audits, technical SEO, schema, product and category pages, Arabic and English keywords and content, AI search (GEO), local SEO, hreflang, content briefs and SEO plans. Knows the Saudi market and Shopify/WooCommerce. No API key needed.",
+      "category": "OfficeHub"
+    },
+    {
+      "name": "officehub-png2svg",
+      "displayName": "OfficeHub PNG to SVG",
+      "source": "./plugins/officehub-png2svg",
+      "description": "Convert PNG/JPG/WebP logos, icons and illustrations into high-detail SVG vectors. Removes any solid background automatically (keeping same-coloured details inside the artwork), cleans edge halos, snaps flat artwork to its real colours and checks the SVG against the original.",
       "category": "OfficeHub"
     }
   ]
