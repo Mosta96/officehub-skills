@@ -1,8 +1,8 @@
 {
   "name": "officehub-png2svg",
   "displayName": "OfficeHub PNG to SVG",
-  "version": "1.0.0",
-  "description": "Convert PNG/JPG/WebP logos, icons and illustrations into high-detail SVG vectors. Removes any solid background automatically (keeping same-coloured details inside the artwork), cleans edge halos, snaps flat artwork to its real colours and checks the SVG against the original.",
+  "version": "1.1.0",
+  "description": "Convert PNG/JPG/WebP logos, icons and illustrations - or polish an existing traced SVG - into publish-ready SVG vectors. Geometry first: exact circles and concentric arcs, straight snapped lines, sharp corners and aligned edges. Removes any solid background automatically, cleans edge halos, snaps flat artwork to its real colours and checks the SVG against the original.",
   "author": {
     "name": "OfficeHub"
   },

@@ -50,6 +50,11 @@ except ImportError:  # pragma: no cover - environment check
     print("Error: Pillow and numpy are required (pip install pillow numpy).", file=sys.stderr)
     sys.exit(2)
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+import geometry as geo  # noqa: E402
+
 # Pillow >= 9.1 moved resampling constants into an enum.
 _RESAMPLE = getattr(Image, "Resampling", Image)
 
@@ -418,7 +423,15 @@ def detect_flat_palette(rgb: np.ndarray, opaque: np.ndarray, bg: Optional[np.nda
                 break
         if not is_blend:
             pruned.append((c, wgt))
-    keep = [c for c, _ in pruned]
+    # a minor shade right next to a major colour is an edge/blur artefact of that colour
+    pruned.sort(key=lambda cw: -cw[1])
+    merged_cols: list[tuple[np.ndarray, float]] = []
+    for c, wgt in pruned:
+        host = next((m for m in merged_cols
+                     if np.linalg.norm(m[0] - c) <= 40 and wgt < 0.05 * m[1]), None)
+        if host is None:
+            merged_cols.append((c, wgt))
+    keep = [c for c, _ in merged_cols]
     if not keep or len(keep) > max_colors:
         return None
     palette = np.stack(keep)
@@ -705,8 +718,51 @@ def _composite(rgba: np.ndarray, color) -> np.ndarray:
     return rgba[..., :3] * a + np.asarray(color, np.float32) * (1 - a)
 
 
+def _detail_tiles(src_rgba, out, score, path, n=4) -> list:
+    """Zoomed side-by-side crops (source | SVG) of the n worst areas."""
+    h, w = score.shape
+    win = max(24, min(h, w) // 3)
+    win = min(win, h, w)
+    step = max(1, win // 4)
+    ii = np.pad(score.cumsum(0).cumsum(1), ((1, 0), (1, 0)))
+    ys = np.arange(0, h - win + 1, step)
+    xs = np.arange(0, w - win + 1, step)
+    yy, xx = np.meshgrid(ys, xs, indexing="ij")
+    sums = ii[yy + win, xx + win] - ii[yy, xx + win] - ii[yy + win, xx] + ii[yy, xx]
+    order = np.argsort(-sums, axis=None)
+    boxes = []
+    for idx in order:
+        y, x = int(yy.flat[idx]), int(xx.flat[idx])
+        if sums.flat[idx] <= 0:
+            break
+        if any(abs(x - bx) < win and abs(y - by) < win for bx, by, _ in boxes):
+            continue
+        boxes.append((x, y, win))
+        if len(boxes) == n:
+            break
+    if not boxes:
+        return []
+    tile = 320
+    rows = []
+    for x, y, s in boxes:
+        a = Image.fromarray(np.clip(_over_checker(src_rgba[y:y + s, x:x + s]), 0, 255).astype(np.uint8))
+        b = Image.fromarray(np.clip(_over_checker(out[y:y + s, x:x + s]), 0, 255).astype(np.uint8))
+        rs = _RESAMPLE.NEAREST if s < tile else _RESAMPLE.LANCZOS
+        a, b = a.resize((tile, tile), rs), b.resize((tile, tile), rs)
+        row = Image.new("RGB", (tile * 2 + 8, tile), (255, 0, 0))
+        row.paste(a, (0, 0))
+        row.paste(b, (tile + 8, 0))
+        rows.append(row)
+    sheet = Image.new("RGB", (tile * 2 + 8, len(rows) * (tile + 8) - 8), (128, 128, 128))
+    for i, row in enumerate(rows):
+        sheet.paste(row, (0, i * (tile + 8)))
+    sheet.save(path)
+    return [{"x": x, "y": y, "size": s} for x, y, s in boxes]
+
+
 def verify(src_rgba: np.ndarray, removed: Optional[np.ndarray], bg: Optional[np.ndarray],
-           svg_text: str, preview_path: Optional[str], soft_edges: bool = False) -> dict:
+           svg_text: str, preview_path: Optional[str], soft_edges: bool = False,
+           details_path: Optional[str] = None) -> dict:
     """Render the SVG and compare it with the source the way a viewer would see it.
 
     - Solid background removed: the SVG is placed on the original background colour and
@@ -784,24 +840,123 @@ def verify(src_rgba: np.ndarray, removed: Optional[np.ndarray], bg: Optional[np.
         result["preview_legend"] = ("left: source, middle: SVG on a checkerboard (checks = "
                                     "transparent), right: difference (red = colour error, "
                                     "magenta = shape mismatch, cyan = background not removed)")
+    if details_path:
+        comp_t, comp_r, _ = pairs[0]
+        score = np.abs(comp_r - comp_t).max(axis=2) + 255.0 * (ink_t_any ^ ink_r_any) + 255.0 * leak
+        boxes = _detail_tiles(src_rgba, out, score, details_path)
+        if boxes:
+            result["details"] = details_path
+            result["detail_boxes"] = boxes
     return result
 
 
 # --------------------------------------------------------------------------- main flow
 
+def svg_meta(text: str) -> dict:
+    """viewBox and display size of an SVG root."""
+    m = re.search(r"<svg\b[^>]*>", text)
+    if not m:
+        raise RuntimeError("input SVG has no <svg> root")
+    tag = m.group(0)
+
+    def num(attr):
+        mm = re.search(r'\s' + attr + r'="\s*([0-9.]+)\s*(px)?\s*"', tag)
+        return float(mm.group(1)) if mm else None
+
+    vb = re.search(r'viewBox="\s*([-0-9.eE]+)[\s,]+([-0-9.eE]+)[\s,]+([-0-9.eE]+)[\s,]+([-0-9.eE]+)\s*"', tag)
+    wd, ht = num("width"), num("height")
+    if vb:
+        vx, vy, vw, vh = (float(v) for v in vb.groups())
+    elif wd and ht:
+        vx, vy, vw, vh = 0.0, 0.0, wd, ht
+    else:
+        raise RuntimeError("input SVG needs a viewBox or width/height")
+    return {"vb": (vx, vy, vw, vh), "disp": (wd or vw, ht or vh)}
+
+
+def _fmt(v: float) -> str:
+    t = f"{v:.3f}".rstrip("0").rstrip(".")
+    return t or "0"
+
+
+def geometry_svg(rgb_up, opaque, palette, args, k, unit_scale, offset, grid_units,
+                 root_attrs, strict_mode: bool = False) -> tuple[str, dict]:
+    """Geometry-first SVG: one even-odd path per colour, stacked without seams."""
+    ys, xs = np.nonzero(opaque)
+    label = np.full(opaque.shape, -1, np.int32)
+    for start in range(0, len(ys), 500_000):
+        sl = slice(start, start + 500_000)
+        px = rgb_up[ys[sl], xs[sl]]
+        d = ((px[:, None, :] - palette[None, :, :]) ** 2).sum(axis=2)
+        label[ys[sl], xs[sl]] = np.argmin(d, axis=1)
+    areas = [int((label == i).sum()) for i in range(len(palette))]
+    order = [i for i in sorted(range(len(palette)), key=lambda i: -areas[i]) if areas[i] > 0]
+    # layer i covers its own pixels plus every later layer's: later layers paint on top,
+    # so no hairline seams appear between touching colours
+    masks = []
+    acc = np.zeros(opaque.shape, bool)
+    for i in reversed(order):
+        acc = acc | (label == i)
+        masks.append(acc.copy())
+    masks.reverse()
+    prm = geo.GeoParams(k=k)
+    if strict_mode:
+        prm = geo.strict(prm)
+    if args.snap_angle is not None:
+        prm.snap_angle = args.snap_angle
+    if args.align_tol is not None:
+        prm.align_tol = args.align_tol
+    layers, stats = geo.polish_layers(masks, prm)
+    parts = []
+    for i, cts in zip(order, layers):
+        d = geo.to_path(cts, unit_scale, offset[0], offset[1], grid_units)
+        if d:
+            parts.append(f'<path fill="{_hex(palette[i])}" fill-rule="evenodd" d="{d}"/>')
+    svg = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           f'<svg xmlns="http://www.w3.org/2000/svg" {root_attrs}>\n'
+           + "\n".join(parts) + "\n</svg>\n")
+    stats["mode"] = "strict" if strict_mode else "default tolerances"
+    return svg, stats
+
+
 def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
     report: dict = {"input": inp, "output": out_svg, "warnings": []}
-    src = Image.open(inp)
-    src.load()
-    report["input_mode"] = src.mode
-    rgba = np.asarray(src.convert("RGBA"), dtype=np.float32)
+    is_svg = inp.lower().endswith(".svg")
+    meta = None
+    verify_rgba = None
+    if is_svg:
+        # Polish an existing SVG: rasterize it large, then rebuild it geometry first.
+        with open(inp, encoding="utf-8") as fh:
+            svg_in = fh.read()
+        meta = svg_meta(svg_in)
+        vw, vh = meta["vb"][2], meta["vb"][3]
+        f = 6000.0 / max(vw, vh)
+        while (vw * f) * (vh * f) > 16_000_000:
+            f *= 0.9
+        W, H = max(1, round(vw * f)), max(1, round(vh * f))
+        r = render_svg(svg_in, W, H)
+        if r is None:
+            raise RuntimeError("SVG input needs a renderer: pip install resvg-py")
+        rgba = r[0]
+        fv = min(1.0, 3000.0 / max(W, H))
+        vr = render_svg(svg_in, max(1, round(W * fv)), max(1, round(H * fv)))
+        verify_rgba = vr[0] if vr else None
+        report["input_mode"] = "SVG"
+        report["svg_input"] = {"viewBox": list(meta["vb"]), "display_size": list(meta["disp"]),
+                               "rasterized_to": [W, H]}
+    else:
+        src = Image.open(inp)
+        src.load()
+        report["input_mode"] = src.mode
+        rgba = np.asarray(src.convert("RGBA"), dtype=np.float32)
     h, w = rgba.shape[:2]
     report["input_size"] = [w, h]
     rgb = rgba[..., :3]
     alpha = rgba[..., 3] / 255.0
 
     # Photo-like input check (SVG tracing is meant for logos, icons, flat illustrations).
-    thumb = np.asarray(src.convert("RGB").resize((min(w, 256), min(h, 256))), dtype=np.int32) >> 3
+    thumb_im = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB")
+    thumb = np.asarray(thumb_im.resize((min(w, 256), min(h, 256))), dtype=np.int32) >> 3
     n_colors = len(np.unique(thumb[..., 0] * 1024 + thumb[..., 1] * 32 + thumb[..., 2]))
     if n_colors > 3000:
         report["warnings"].append(
@@ -856,21 +1011,6 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
     report["background"] = bg_info
     removed_mask = (alpha < 0.5) & (rgba[..., 3] >= 128) if bg_color is not None else None
 
-    # ---- upscale
-    if args.upscale == "auto":
-        long_side = max(w, h)
-        scale = 1 if long_side >= 1200 else min(4, math.ceil(1200 / long_side))
-        while scale > 1 and (w * scale) * (h * scale) > 16_000_000:
-            scale -= 1
-    else:
-        scale = int(args.upscale)
-    report["upscale"] = scale
-    if bg_color is not None:
-        rgb_up, a_up = plain_resize(rgb, alpha, scale)
-    else:
-        rgb_up, a_up = premultiplied_resize(rgb, alpha, scale)
-    opaque = a_up >= 0.5
-
     # ---- preset + overrides
     params = dict(PRESETS[args.preset])
     preset_colors = params.pop("colors", 0)
@@ -895,6 +1035,36 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
             report["warnings"].append(
                 "the source has soft (blurred) edges: the SVG uses crisp edges at the same "
                 "positions, so the comparison shows small edge differences. That is expected.")
+
+    ink_src = alpha >= 0.5
+    thin = (1 - float((ink_src & ~_dilate(~ink_src, 1)).sum()) / float(ink_src.sum())
+            if ink_src.sum() > 50 else 0.0)
+    geom_on = args.geometry != "off" and palette is not None and args.colors not in ("0", "off")
+    if args.geometry != "off" and palette is None:
+        report["geometry"] = "skipped (not flat artwork: gradients/photo are traced as colour areas)"
+    elif args.geometry == "auto" and geom_on and thin > 0.35 and not is_svg:
+        geom_on = False
+        report["geometry"] = ("skipped (thin strokes / small text: too few pixels per detail for "
+                              "shape fitting; --geometry strict forces it)")
+
+    # ---- upscale (geometry fitting wants at least 2 working px per source px)
+    if is_svg:
+        scale = 1
+    elif args.upscale == "auto":
+        long_side = max(w, h)
+        scale = 1 if long_side >= 1200 else min(4, math.ceil(1200 / long_side))
+        if geom_on:
+            scale = max(scale, 2)
+        while scale > 1 and (w * scale) * (h * scale) > 16_000_000:
+            scale -= 1
+    else:
+        scale = int(args.upscale)
+    report["upscale"] = scale
+    if bg_color is not None:
+        rgb_up, a_up = plain_resize(rgb, alpha, scale)
+    else:
+        rgb_up, a_up = premultiplied_resize(rgb, alpha, scale)
+    opaque = a_up >= 0.5
 
     # ---- defringe
     if args.defringe == "on":
@@ -931,24 +1101,46 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
     # ---- trace
     out_dir = os.path.dirname(os.path.abspath(out_svg))
     os.makedirs(out_dir, exist_ok=True)
-    with tempfile.TemporaryDirectory() as td:
-        prep = os.path.join(td, "prepared.png")
-        a8 = np.where(opaque, 255, 0).astype(np.uint8)
-        rgb8 = np.where(opaque[..., None], np.clip(np.rint(rgb_up), 0, 255), 0).astype(np.uint8)
-        Image.fromarray(np.dstack([rgb8, a8]), "RGBA").save(prep)
-        if args.keep_temp:
-            keep = os.path.splitext(out_svg)[0] + ".prepared.png"
-            shutil.copyfile(prep, keep)
-            report["prepared_png"] = keep
-        raw_svg = os.path.join(td, "raw.svg")
-        report["tracer"] = trace(prep, raw_svg, trace_params)
-        with open(raw_svg, encoding="utf-8") as fh:
-            svg = fh.read()
-
-    svg = fix_svg_root(svg, w * scale, h * scale, w, h)
-    svg = re.sub(r'<path d=""[^>]*/>\s*', "", svg)  # vtracer emits empty paths
-    with open(out_svg, "w", encoding="utf-8") as fh:
-        fh.write(svg)
+    if is_svg:
+        vx, vy, vw, vh = meta["vb"]
+        dw, dh = meta["disp"]
+        root_attrs = (f'width="{_fmt(dw)}" height="{_fmt(dh)}" '
+                      f'viewBox="{_fmt(vx)} {_fmt(vy)} {_fmt(vw)} {_fmt(vh)}"')
+        k_disp, unit_scale, offset = w / dw, w / vw, (vx, vy)
+    else:
+        dw, dh = w, h
+        root_attrs = f'width="{w}" height="{h}" viewBox="0 0 {w} {h}"'
+        k_disp, unit_scale, offset = float(scale), float(scale), (0.0, 0.0)
+    if geom_on:
+        grid_units = 0.125 * (k_disp / unit_scale)  # 1/8 display px in output units
+        # tolerances never drop below ~1 working px (pixel noise of the traced mask)
+        # An existing SVG is usually an old trace with wobbly edges: polish it with the
+        # strict (larger) snap tolerances unless the user chose otherwise.
+        strict_mode = args.geometry == "strict" or (args.geometry == "auto" and is_svg)
+        svg, gstats = geometry_svg(rgb_up, opaque, palette, args, max(k_disp, 2.5), unit_scale,
+                                   offset, grid_units, root_attrs, strict_mode)
+        report["tracer"] = "geometry fitter (shapes → lines → alignment → curves)"
+        report["geometry"] = gstats
+        with open(out_svg, "w", encoding="utf-8") as fh:
+            fh.write(svg)
+    else:
+        with tempfile.TemporaryDirectory() as td:
+            prep = os.path.join(td, "prepared.png")
+            a8 = np.where(opaque, 255, 0).astype(np.uint8)
+            rgb8 = np.where(opaque[..., None], np.clip(np.rint(rgb_up), 0, 255), 0).astype(np.uint8)
+            Image.fromarray(np.dstack([rgb8, a8]), "RGBA").save(prep)
+            if args.keep_temp:
+                keep = os.path.splitext(out_svg)[0] + ".prepared.png"
+                shutil.copyfile(prep, keep)
+                report["prepared_png"] = keep
+            raw_svg = os.path.join(td, "raw.svg")
+            report["tracer"] = trace(prep, raw_svg, trace_params)
+            with open(raw_svg, encoding="utf-8") as fh:
+                svg = fh.read()
+        svg = fix_svg_root(svg, w * scale, h * scale, dw, dh)
+        svg = re.sub(r'<path d=""[^>]*/>\s*', "", svg)  # vtracer emits empty paths
+        with open(out_svg, "w", encoding="utf-8") as fh:
+            fh.write(svg)
 
     # ---- optimise
     if args.optimize:
@@ -957,7 +1149,7 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
         with open(out_svg, encoding="utf-8") as fh:
             svg = fh.read()
         if tool and 'viewBox="' not in svg:
-            svg = fix_svg_root(svg, w * scale, h * scale, w, h)
+            svg = fix_svg_root(svg, w * scale, h * scale, dw, dh)
             with open(out_svg, "w", encoding="utf-8") as fh:
                 fh.write(svg)
     else:
@@ -973,13 +1165,17 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
 
     # ---- verify
     preview = None if args.no_preview else os.path.splitext(out_svg)[0] + ".preview.png"
-    report["verification"] = verify(rgba, removed_mask, bg_color, svg, preview,
-                                    soft_edges=bool(report.get("soft_edges")))
+    details = None if args.no_preview else os.path.splitext(out_svg)[0] + ".details.png"
+    if is_svg:
+        report["verification"] = (verify(verify_rgba, None, None, svg, preview, details_path=details)
+                                  if verify_rgba is not None else {"verified": False})
+    else:
+        report["verification"] = verify(rgba, removed_mask, bg_color, svg, preview,
+                                        soft_edges=bool(report.get("soft_edges")),
+                                        details_path=details)
 
     # Thin strokes / small text: most artwork pixels are edge pixels at the source size.
-    ink = alpha >= 0.5
-    if ink.sum() > 50:
-        thin = 1 - float((ink & ~_dilate(~ink, 1)).sum()) / float(ink.sum())
+    if not is_svg:
         if thin > 0.35:
             report["warnings"].append(
                 f"thin strokes or small text ({round(thin * 100)}% of the artwork is edge "
@@ -991,7 +1187,8 @@ def convert(inp: str, out_svg: str, args: argparse.Namespace) -> dict:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="High-detail PNG/JPG/WebP → SVG with automatic solid-background removal.")
-    p.add_argument("inputs", nargs="+", help="Input raster image(s)")
+    p.add_argument("inputs", nargs="+",
+                   help="Input image(s): PNG/JPG/WebP, or an existing SVG to polish")
     p.add_argument("-o", "--output", help="Output SVG (single input only)")
     p.add_argument("--out-dir", help="Folder for outputs (default: next to each input)")
     p.add_argument("--bg", default="auto",
@@ -1009,6 +1206,14 @@ def build_parser() -> argparse.ArgumentParser:
                         "colours). Every artwork colour must be listed")
     p.add_argument("--upscale", default="auto", choices=("auto", "1", "2", "3", "4"))
     p.add_argument("--defringe", choices=("on", "off"), default="on")
+    p.add_argument("--geometry", choices=("auto", "strict", "off"), default="auto",
+                   help="Geometry-first fitting for flat artwork: exact circles/arcs, straight "
+                        "H/V lines, sharp corners, aligned edges (default auto; strict = "
+                        "looser snapping for wobbly sources; off = plain vtracer curves)")
+    p.add_argument("--snap-angle", dest="snap_angle", type=float,
+                   help="Degrees from horizontal/vertical to snap a line (default 1.5; strict 3)")
+    p.add_argument("--align-tol", dest="align_tol", type=float,
+                   help="Display px within which edges share one x/y (default 0.75; strict 1.25)")
     p.add_argument("--no-optimize", dest="optimize", action="store_false",
                    help="Skip svgo even if installed")
     p.add_argument("--npx", action="store_true",
@@ -1089,10 +1294,19 @@ def _print_human(rep: dict) -> None:
           + (f" ({bg.get('color')}, removed {bg.get('removed_pct')}%)" if bg.get("color") else ""))
     print(f"  svg: {rep['svg_bytes']:,} bytes, {rep['svg_paths']} paths, "
           f"{rep['svg_fill_colors']} colours, optimizer {rep['optimizer']}")
+    g = rep.get("geometry")
+    if isinstance(g, dict):
+        print(f"  geometry: {g.get('circles', 0)} circles, {g.get('ellipses', 0)} ellipses, "
+              f"{g.get('arcs', 0)} arcs, {g.get('lines', 0)} lines, {g.get('curves', 0)} curves; "
+              f"{g.get('snapped_lines', 0)} lines snapped, {g.get('aligned_edges', 0)} edges aligned"
+              f"; fallbacks {g.get('fallback_curves', 0) + g.get('fallback_polygon', 0)}")
+    elif g:
+        print(f"  geometry: {g}")
     if v.get("verified"):
         print(f"  check: {v['grade']} (shape IoU {v['shape_iou']}, colour MAE {v['color_mae']}, "
               f"p95 {v['color_p95']}) via {v['renderer']}"
-              + (f"; preview {v['preview']}" if v.get("preview") else ""))
+              + (f"; preview {v['preview']}" if v.get("preview") else "")
+              + (f"; details {v['details']}" if v.get("details") else ""))
     else:
         print(f"  check: not verified ({v.get('note')})")
     for w in rep.get("warnings", []):
