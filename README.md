@@ -7,6 +7,7 @@ Each skill is its own plugin, so you pick only the ones you want.
 |---|---|
 | `officehub-product-angles` | Give it one photo of an office-furniture item plus its dimensions (W x D x H). Claude writes one ready-to-paste prompt per angle (front, 3/4, sides, back, top, detail), with defaults for chairs, desks, workstations and storage. You generate each image in Gemini (or ChatGPT) with the original photo attached, then upload the results back so Claude can check them. It then prepares file names, Arabic/English alt text and the AI label for upload. No API key needed. |
 | `officehub-seo` | SEO toolkit for officehub.sa: site and page audits, technical SEO, schema, product and category pages, Arabic and English keywords and content, AI search (GEO), local SEO, hreflang, content briefs and SEO plans. Knows the Saudi market and Shopify/WooCommerce. Adapted from the MIT-licensed claude-seo project (see `plugins/officehub-seo/skills/officehub-seo/LICENSE.txt`). No API key needed. |
+| `officehub-png2svg` | Turns a PNG (or JPG/WebP) logo, icon or illustration into a high-detail SVG. Finds and removes any solid background automatically, keeps same-coloured details inside the artwork, removes edge halos, snaps flat artwork to its real colours (or to brand colours you give it) and checks the SVG against the original with a side-by-side preview. Needs code execution and `pip install vtracer resvg-py`. Adapted from the MIT-licensed lovstudio/png2svg-skill. |
 
 ### Fill in the OfficeHub profile
 
@@ -32,6 +33,7 @@ Plugins added this way also sync to Claude Code when you're signed in with the s
 /plugin marketplace add Mosta96/officehub-skills
 /plugin install officehub-product-angles@officehub-skills
 /plugin install officehub-seo@officehub-skills
+/plugin install officehub-png2svg@officehub-skills
 ```
 
 Or run `/plugin` and pick them from the **Discover** tab. Your git must already be signed in to GitHub (for example with `gh auth login`), because the repo is private.
