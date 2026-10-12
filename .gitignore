@@ -1,0 +1,14 @@
+# Secrets
+api_key.txt
+*.key
+.env
+.env.*
+
+# Build outputs
+*.zip
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
