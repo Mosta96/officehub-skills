@@ -17,8 +17,8 @@ profile. Source tags: [site] = officehub.sa, [li] = LinkedIn, [ig] = Instagram,
 
 | Field | Value |
 |---|---|
-| Brand (Arabic) | اوفيس هب [owner] |
-| Brand (English) | OfficeHub (written "Office Hub" on the site, Instagram and LinkedIn; LinkedIn page name is "Office Hub by NMG"). Pick one spelling and use it everywhere |
+| Brand (Arabic) | أوفيس هب (with hamza, no diacritics) [owner, brand guide] |
+| Brand (English) | OfficeHub, one word [owner, brand guide]. The site, Instagram and LinkedIn still show "Office Hub" (LinkedIn: "Office Hub by NMG"); new copy, titles and schema use OfficeHub |
 | Domain | https://officehub.sa (resolves, checked 2026-10-11/12) |
 | Business type | Office furniture: online store plus one showroom in Riyadh (Al Olaya) [site, li, ig]. Also B2B space planning, 2D/3D drawings, turnkey design and fit-out [site] |
 | Customers | B2B (government agencies, corporates, interior/architecture offices) and B2C (individuals, home workers) [site, owner]. Both matter equally unless told otherwise |
